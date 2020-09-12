@@ -8,7 +8,7 @@ from scipy.fftpack import dct
 
 # 原始数据,读取前3.5s 的数据
 sample_rate, signal = scipy.io.wavfile.read('wonderland_ch_01.wav')
-original_signal = signal[0:int(3.5 * sample_rate)]
+original_signal = signal[0:int(2 * sample_rate)]
 
 signal_num = np.arange(len(signal))
 sample_num = np.arange(len(original_signal))
