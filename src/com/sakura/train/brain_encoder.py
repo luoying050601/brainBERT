@@ -11,6 +11,7 @@ import numpy as np
 import pickle
 import os
 import time
+
 start = time.perf_counter()
 
 subjects = ['derivatives']
@@ -21,7 +22,7 @@ file_name = {
     'anat': 'T1w'
 }
 # 超参数定义
-Epoch = 10
+Epoch = 0
 Batch_size = 16
 LR = 0.005
 Downloads_MNIST = False
@@ -40,11 +41,14 @@ Epoch_line = list(range(Epoch))
 # )
 
 class AutoEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, length, brain_x, brain_y, brain_z):
         super(AutoEncoder, self).__init__()
+
+        # data_size = length * brain_x * brain_y * brain_z
         # define encoder
+        brain_size = brain_x * brain_y * brain_z
         self.encoder = nn.Sequential(
-            nn.Linear(510340, 714),
+            nn.Linear(brain_size, 714),
             nn.Tanh(),
             # nn.Linear(68 * 95 * 79, 372),
             nn.Linear(714, 357),
@@ -73,7 +77,7 @@ class AutoEncoder(nn.Module):
             # nn.Linear(372, 79 * 68 * 95),
             nn.Linear(357, 714),
             nn.Tanh(),
-            nn.Linear(714, 510340),
+            nn.Linear(714, brain_size),
             # nn.Linear(372, 79 * 68 * 95),
             nn.Sigmoid()
         )
@@ -85,29 +89,36 @@ class AutoEncoder(nn.Module):
 
 
 DATA_DIR = os.path.abspath(os.path.join(os.getcwd(), "../../../../"))
-for user in participants:
-    for sub in subjects:
-        print(user, sub)
-        img = sitk.ReadImage(DATA_DIR + '/original_data/fMRI/sub-' + user + '/'
-                             + sub + '/sub-' + user + '_' + file_name[sub] + '.nii.gz')
-        img = sitk.GetArrayFromImage(img)
-        # (372, 68, 95, 79)
 
-        # print(img.shape())
-
-train_loader = Data.DataLoader(dataset=img, batch_size=Batch_size, shuffle=True)
 
 if __name__ == '__main__':
-    autoencoder = AutoEncoder()
+    for user in participants:
+        for sub in subjects:
+            print(user, sub)
+            img = sitk.ReadImage(DATA_DIR + '/original_data/fMRI/sub-' + user + '/'
+                                 + sub + '/sub-' + user + '_' + file_name[sub] + '.nii.gz')
+            img = sitk.GetArrayFromImage(img)
+            print(img.shape)
+            time_point = img.shape[0]
+            brain_x = img.shape[1]
+            brain_y = img.shape[2]
+            brain_z = img.shape[3]
+            # (372, 68, 95, 79)
 
-    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=LR)
+            # print(img.shape())
+
+    train_loader = Data.DataLoader(dataset=img, batch_size=Batch_size, shuffle=True)
+
+    auto_encoder = AutoEncoder(length=time_point, brain_x=brain_x, brain_y=brain_y, brain_z=brain_z)
+
+    optimizer = torch.optim.Adam(auto_encoder.parameters(), lr=LR)
     loss_func = nn.MSELoss()
 
     # init the first image
     # f, a = plt.subplots(2, N_Test_img, figsize=(5, 2))
     # plt.ion()
     # input_img = img[0]
-    view_data = Variable(torch.from_numpy(img) / 255.)
+    # view_data = Variable(torch.from_numpy(img) / 255.)
 
     # for i in range(N_Test_img):
     #     a[0][i].imshow(np.reshape(view_data.data.numpy()[i], (79 * 95 * 68, -1)), cmap='gray')
@@ -117,14 +128,14 @@ if __name__ == '__main__':
     for epoch in range(Epoch):
         for step, input in enumerate(train_loader):
             # print(step)
-            if step < (372 // Batch_size):
+            if step < (time_point // Batch_size):
                 b_x = input.view(Batch_size, -1)
                 b_y = input.view(Batch_size, -1)
             else:
-                b_x = input.view(372 % Batch_size, -1)
-                b_y = input.view(372 % Batch_size, -1)
+                b_x = input.view(time_point % Batch_size, -1)
+                b_y = input.view(time_point % Batch_size, -1)
 
-            encoder_out, decoder_out = autoencoder(b_x.float())
+            encoder_out, decoder_out = auto_encoder(b_x.float())
             encoder_out = encoder_out.float()
             # print(encoder_out.shape)
             decoder_out = decoder_out.float()
@@ -142,7 +153,7 @@ if __name__ == '__main__':
                 view_data = view_data.view(view_data.shape[0], -1)
                 # print("after view_data_Shape:", view_data.shape)
 
-                _, decoder_data = autoencoder(view_data.float())
+                _, decoder_data = auto_encoder(view_data.float())
                 # for i in range(N_Test_img):
                 #     a[1][i].clear()
                 #     a[1][i].imshow(np.reshape(decoder_data.data.numpy()[i], (79 * 95 * 68, -1)), cmap='gray')
@@ -154,7 +165,7 @@ if __name__ == '__main__':
     # plt.show()
     # torch.from_numpy(img)
     # view_data = img[:200].view(-1, 79 * 95).type(torch.FloatTensor) / 255.
-    # encoder_data, _ = autoencoder(view_data.float())
+    # encoder_data, _ = auto_encoder(view_data.float())
     # fig = plt.figure(2)
     # ax = Axes3D(fig)  # 3D graph
     # X = encoder_data.data[:, 0].numpy()
@@ -171,10 +182,10 @@ if __name__ == '__main__':
     # long running
     # do something other
 end = time.perf_counter()
-print((end - start)/60)
+print((end - start) / 60)
 plt.plot(Epoch_line, train_loss, '.-', label='Loss change')
 plt.xticks(Epoch_line)
 plt.xlabel('epoch')
 plt.legend()
-plt.savefig(DATA_DIR+'/output/Loss_brain/result_'+end+'.jpg')
+plt.savefig(DATA_DIR + '/output/Loss_brain/result_' + str(int(time.time())) + '.jpg')
 plt.show()
