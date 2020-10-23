@@ -4,10 +4,10 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 import logging
 import os
-from .modeling_utils import PreTrainedModel, prune_linear_layer
-from .configuration_bert import BertConfig
-from .file_util import add_start_docstrings
-from .brainBERT import BertLayer, ACT2FN
+from src.com.sakura.train.text.modeling_utils import PreTrainedModel
+from src.com.sakura.train.text.configuration_bert import BertConfig
+from src.com.sakura.train.text.file_util import add_start_docstrings
+from src.com.sakura.train.brainBERT import BertLayer, ACT2FN
 import sys
 
 BertLayerNorm = torch.nn.LayerNorm

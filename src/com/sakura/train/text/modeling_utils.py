@@ -18,19 +18,15 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import copy
-import json
 import logging
 import os
-from io import open
 
-import six
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
-from .configuration_utils import PretrainedConfig
+from src.com.sakura.train.text.configuration_utils import PretrainedConfig
 from .file_util import cached_path, WEIGHTS_NAME, TF_WEIGHTS_NAME, TF2_WEIGHTS_NAME
 
 logger = logging.getLogger(__name__)

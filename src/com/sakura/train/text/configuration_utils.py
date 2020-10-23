@@ -24,7 +24,7 @@ import logging
 import os
 from io import open
 
-from .file_util import cached_path, CONFIG_NAME
+from src.com.sakura.train.text.file_util import cached_path, CONFIG_NAME
 
 logger = logging.getLogger(__name__)
 
